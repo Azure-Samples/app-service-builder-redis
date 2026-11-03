@@ -66,8 +66,8 @@ and restrict it to your testers; do not expose it as a production public API.
 - Node.js 24 and npm for local development.
 - Azure CLI and Bicep, an explicitly chosen subscription, an existing DEV/TEST
   resource group and permission to provision new Redis dependencies.
-- An App Service Builder preview target that activates Node.js 24 compute
-  (currently East US 2 or West US 2; verify your environment).
+- An App Service Builder target in **West US 2 (`westus2`)**, the only public
+  customer Builder region, that activates Node.js 24 compute.
 - Permission to create Redis data access assignments for your app identity and,
   separately, a developer principal if testing locally.
 - For GitHub deployment, your own published repository/fork, a root
@@ -87,7 +87,7 @@ rely on your CLI default subscription.
 export SUBSCRIPTION_ID="<your-devtest-subscription-id>"
 export RESOURCE_GROUP="<your-existing-devtest-resource-group>"
 export CACHE_NAME="<unique-new-managed-redis-name>"
-export REDIS_LOCATION="eastus2"
+export REDIS_LOCATION="westus2"
 
 az group show --subscription "$SUBSCRIPTION_ID" --name "$RESOURCE_GROUP"
 az deployment group validate \
@@ -117,13 +117,17 @@ Balanced B0, no high availability, no modules, no persistence, OSS clustering,
 TLS 1.2 minimum, Entra-only authentication and `NoEviction`. This avoids silent
 loss of counters/leaderboard when full; writes fail explicitly at the memory
 limit. Do not use this availability/durability profile in production.
-If B0 has no capacity, try another approved region with the **same** SKU; do not
-silently choose a large production tier. Bicep may report missing type definitions
-for newer API versions; ARM preflight validation remains necessary.
+The dependency template defaults to West US 2 even when the existing resource
+group has a different location. Validate current B0 availability and capacity
+there before provisioning; a retail price listing is not a capacity guarantee.
+If validation fails, stop and resolve it rather than silently changing region or
+choosing a larger production tier. Customer Builder deployments must remain in
+West US 2. Bicep may report missing type definitions for newer API versions;
+ARM preflight validation remains necessary.
 
 ## 2. Assign the app identity and grant Redis access
 
-Create a new Builder app in your approved location, with this source repository
+Create a new Builder app in **West US 2 (`westus2`)**, with this source repository
 and branch. Keep `builder.yaml` at the repository root. On **Identity**, enable
 system-assigned identity and choose **Save and deploy**. For a first deployment
 without a usable build, identity can be saved before source activation.
@@ -160,7 +164,7 @@ Save only these non-secret variables on Builder's Variables page:
 
 | Variable | Value |
 | --- | --- |
-| `REDIS_ENDPOINT` | Provisioning output, such as `name.eastus2.redis.azure.net:10000` |
+| `REDIS_ENDPOINT` | Provisioning output, such as `name.westus2.redis.azure.net:10000` |
 | `REDIS_NAMESPACE` | `demo`, matching the data access grant |
 | `REDIS_AUTH_MODE` | `managed-identity` (default) |
 | `AZURE_CLIENT_ID` | Unset for system identity; selected user identity client ID otherwise |
@@ -270,7 +274,8 @@ Logging instrumentation alone does not establish a passed natural-expiry soak.
 
 ## Screenshots and evidence boundary
 
-On November 3, 2026, both components built on Node.js 24.22.1 and the hosted API
+On November 3, 2026, an **internal East US 2 test deployment** built both
+components on Node.js 24.22.1 and the hosted API
 connected to Azure Managed Redis using its **system-assigned managed identity**.
 Required Entra sign-in restricted access to one trusted tenant and one tester
 object ID; unauthenticated `/` and `/api/health` requests returned 401.
@@ -306,7 +311,7 @@ Earlier local-with-Azure captures are retained separately:
 | Token acquisition fails | Identity is assigned to the running app version; system identity has no `AZURE_CLIENT_ID`; user identity client ID matches the attached identity. Local runs explicitly use `developer`. |
 | `WRONGPASS`, `NOAUTH` or `NOPERM` | Grant the credential's object ID, not client ID; check assignment success/propagation and matching namespace. Azure Contributor alone is not Redis data access. |
 | Cluster discovery/reconnect fails | TLS DNS name and all discovered Redis node ports must be reachable. The address map preserves endpoint DNS for advertised IPs and TLS verification stays enabled. |
-| `CacheCapacityUnavailable` | B0 capacity varies by region. Revalidate the same economical SKU in another approved region; stop rather than auto-upgrading. |
+| `CacheCapacityUnavailable` | Validate B0 capacity in West US 2 and stop if unavailable. Do not silently change the customer region or auto-upgrade the tier. |
 | `OOM` / write failure | B0 is deliberately small and uses `NoEviction`; remove demo data or approve a larger tier. Do not fake success or silently evict durable-looking counters. |
 | Build succeeds but activation fails | Check Node.js support on the selected Builder location. Do not keep deploying unsupported compute output or silently replace the runtime. |
 | `/api/health` returns 503 | Inspect sanitized backend logs, identity assignment, Redis access policy and network reachability. A web page alone does not prove Redis works. |
@@ -315,7 +320,7 @@ Earlier local-with-Azure captures are retained separately:
 ## Costs and cleanup
 
 On November 3, 2026, the Azure retail meter
-`Azure_Managed_Redis_Balanced_B0` in East US and East US 2 listed **USD $0.016/hour**
+`Azure_Managed_Redis_Balanced_B0` in West US 2 listed **USD $0.016/hour**
 (about **$11.68 for 730 hours**). Verify the exact deployment region's current
 meter before provisioning. Availability, taxes, networking, high availability
 and Builder compute are separate; there is no free-tier guarantee or automatic

@@ -2,7 +2,8 @@ targetScope = 'resourceGroup'
 
 @description('Unique name for a NEW Azure Managed Redis instance; do not target an existing cache.')
 param cacheName string
-param location string = resourceGroup().location
+@description('Keep Redis aligned with the public customer Builder region. Validate B0 capacity before provisioning.')
+param location string = 'westus2'
 
 @description('Balanced B0 is the economical development/test tier. No automatic larger-SKU fallback.')
 param skuName string = 'Balanced_B0'
