@@ -295,7 +295,10 @@ These are actual Microsoft Edge screenshots, not fixtures.
 
 **Qualification limits:** this hosted DEV/TEST evidence used a temporary internal
 source upload, not the GitHub-source integration taught above. GitHub-source
-deployment and a full natural-token-expiry hosted renewal/soak remain unverified.
+deployment remains unverified. The optional 24-hour natural-token-expiry hosted
+soak was explicitly waived and was not performed; it is not a passed result or
+a required sample-completion check. Private runtime-log delivery and initial
+token-expiry observations were verified, not expiry-crossing renewal.
 The real-Redis accelerated reauthentication/reconnection check described above
 used developer credentials; it is not substituted for hosted renewal evidence.
 Earlier local-with-Azure captures are retained separately:
