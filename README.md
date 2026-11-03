@@ -254,6 +254,20 @@ is shortened to 20 seconds; the real signed Entra token is unchanged. This is
 long-duration hosted exercise across real credential expiry separately before
 claiming that qualification. Verification keys are removed on successful cleanup.
 
+For an explicitly approved private renewal investigation,
+`PULSEBOARD_RENEWAL_DIAGNOSTICS=1` enables server-side JSON observations; the
+default is off. They contain only timestamps, random process/connection
+identifiers, connection generations and authentication outcomes, never tokens,
+claims, account IDs or Redis values. Successful `AUTH` is logged only after
+the SDK command resolves. The observer retains credential objects, token expiry
+and SDK scheduling unchanged. It relies on the pinned node-redis transport
+method also observed by the verification script; revalidate it on upgrades.
+Heartbeats are limited to one per minute and observations stop after 30 hours.
+There is no diagnostic HTTP endpoint. Configure an approved private runtime-log
+destination before enabling this setting, and treat restart/reconnect or missing
+initial-expiry/acknowledgement records as inconclusive rather than renewal proof.
+Logging instrumentation alone does not establish a passed natural-expiry soak.
+
 ## Screenshots and evidence boundary
 
 On November 3, 2026, both components built on Node.js 24.22.1 and the hosted API

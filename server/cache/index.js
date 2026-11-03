@@ -1,6 +1,6 @@
 const { createConnection } = require('./connection');
 const { keyPrefix } = require('./config');
-const { redis, provider, config } = createConnection();
+const { redis, provider, config, diagnostics } = createConnection();
 const prefix = keyPrefix(config.namespace);
 const key = (suffix) => prefix + suffix;
 
@@ -28,4 +28,4 @@ async function seedDemoData() {
   await transaction.exec();
 }
 
-module.exports = { redis, provider, seedDemoData, key, config };
+module.exports = { redis, provider, seedDemoData, key, config, diagnostics };

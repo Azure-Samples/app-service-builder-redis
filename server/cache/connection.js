@@ -3,11 +3,14 @@ const { DefaultAzureCredential, ManagedIdentityCredential } = require('@azure/id
 const { EntraIdCredentialsProviderFactory, REDIS_SCOPE_DEFAULT } = require('@redis/entraid');
 const { isIP } = require('node:net');
 const { readConfig } = require('./config');
+const { createRenewalDiagnostics } = require('./renewalDiagnostics');
 
 function createConnection({ config = readConfig(), credential, observeRefresh } = {}) {
   credential ||= config.mode === 'developer'
     ? new DefaultAzureCredential()
     : new ManagedIdentityCredential(config.clientId ? { clientId: config.clientId } : {});
+  const diagnostics = createRenewalDiagnostics();
+  if (diagnostics) credential = diagnostics.wrapCredential(credential);
   const provider = EntraIdCredentialsProviderFactory.createForDefaultAzureCredential({
     credential,
     scopes: REDIS_SCOPE_DEFAULT,
@@ -25,6 +28,7 @@ function createConnection({ config = readConfig(), credential, observeRefresh } 
       },
     });
   }
+  diagnostics?.observeProvider(provider);
   const redis = createCluster({
     rootNodes: [{ url: `rediss://${config.endpoint}` }],
     defaults: {
@@ -46,7 +50,7 @@ function createConnection({ config = readConfig(), credential, observeRefresh } 
     },
   });
   redis.on('error', err => console.error('Redis cluster error:', err.message));
-  return { redis, provider, config };
+  return { redis, provider, config, diagnostics };
 }
 
 module.exports = { createConnection };

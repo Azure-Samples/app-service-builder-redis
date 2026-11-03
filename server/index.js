@@ -1,7 +1,7 @@
 const express = require('express');
 const path = require('path');
 const errorHandler = require('./middleware/errorHandler');
-const { redis, seedDemoData } = require('./cache');
+const { redis, seedDemoData, diagnostics } = require('./cache');
 
 const app = express();
 app.use(express.json());
@@ -28,6 +28,7 @@ app.use(errorHandler);
 
 async function start() {
   await redis.connect();
+  await diagnostics?.attach(redis);
   await redis.ping();
   await seedDemoData();
   const port = Number(process.env.PORT || 8080);
@@ -39,6 +40,7 @@ async function start() {
       server.close(() => {
         // HTTP requests have drained; destroy also disposes streaming token subscriptions.
         redis.destroy();
+        diagnostics?.stop();
       });
     });
   }
@@ -47,5 +49,6 @@ async function start() {
 start().catch((err) => {
   console.error('PulseBoard startup failed:', err.message);
   redis.destroy();
+  diagnostics?.stop();
   process.exitCode = 1;
 });
