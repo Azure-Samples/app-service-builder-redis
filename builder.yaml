@@ -1,0 +1,19 @@
+components:
+  - name: site
+    role: static
+    rootDirectory: client
+    platform: nodejs
+    platformVersion: "24"
+    path: /
+  - name: api
+    role: web
+    rootDirectory: server
+    platform: nodejs
+    platformVersion: "24"
+    path: /api
+    build: npm run build:builder
+    run:
+      port: 8080
+      start: node index.js
+      healthCheckPath: /api/health
+      healthCheckStatusCodes: [200]
